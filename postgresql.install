@@ -1,7 +1,23 @@
+post_install() {
+    if [ "$(getent group postgres | cut -d ":" -f 3)" != "41" ]; then
+        groupadd -g 41 postgres
+    fi
+
+    if [ "$(getent passwd postgres | cut -d ":" -f 3)" != "41" ]; then
+        useradd -c "PostgreSQL Server" -g postgres -d /var/lib/postgres -u 41 postgres
+
+    fi
+}
+
 post_upgrade() {
     # Prints the warning message if the database version on disk
     # does not match the PostgreSQL major version.
     if [ -d /var/lib/postgres/data ]; then
         /usr/bin/postgresql-check-db-dir /var/lib/postgres/data || true
     fi
+}
+
+post_remove() {
+    groupdel postgres 2>/dev/null || true
+    userdel postgres 2>/dev/null  || true
 }

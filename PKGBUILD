@@ -4,8 +4,8 @@ pkgname=(
     postgresql-docs
 )
 pkgbase=postgresql
-pkgver=18.0+3d6a828
-pkgrel=1
+pkgver=18.beta1.r832.g879c492480d
+pkgrel=2
 pkgdesc="Sophisticated object-relational DBMS"
 arch=('x86_64')
 url="https://www.postgresql.org"
@@ -42,24 +42,26 @@ makedepends=(
     'tcl'
     'util-linux'
 )
-source=(git+https://git.postgresql.org/git/postgresql.git#commit=3d6a828938a5fa0444275d3d2f67b64ec3199eb7
+source=(git+https://git.postgresql.org/git/postgresql.git
     0001-Set-DEFAULT_PGSOCKET_DIR-to-run-postgresql.patch
     0002-Force-RPATH-to-be-used-for-the-PL-Perl-plugin.patch
     postgresql-check-db-dir.in
     postgresql.logrotate
     postgresql.pam
-    postgresql.service
-    postgresql.sysusers
-    postgresql.tmpfiles)
-sha256sums=(63123ba5031faa6e86e8cd98a5e0c285a8bf1c553f1297698610be9227e3fe5f
+    postgresql.service)
+sha256sums=(SKIP
     2c09429dca9caf540be647fdac9540eeccb68935994bb54cfd3f2108464916c7
     0fb4915c06b9767933b27adc329e7319485e043fb9f17b1697b969779a00cf14
     94af93b53bf7772e6664c239523ef952ffc905a0de3c2c4b2dfc2fe8f3a2efed
     6abb842764bbed74ea4a269d24f1e73d1c0b1d8ecd6e2e6fb5fb10590298605e
     8b54acedcffbff1421b05d8383ebbee67d9e2a3aedec9a0e1fc6ed7635a0797b
-    3a0bbf9fd61259c4898465c55a8b7cd26202885132ff2b5c685dfe0e0ddd4968
-    3cfe36dd202af56b3ef8e6d6a746b24e6f46f0d9e0d3fa125dbfb5e598170afb
-    ea771830c15b24c8725ded92e6a9ba9848b13f722357c5f5857dfeb21985d54c)
+    3a0bbf9fd61259c4898465c55a8b7cd26202885132ff2b5c685dfe0e0ddd4968)
+
+pkgver() {
+    cd postgresql
+
+    git describe --tags | sed 's/REL_//;s/_/./;s/-/.r/;s/-/./g' | tr A-Z a-z
+}
 
 prepare() {
     cd postgresql
@@ -140,17 +142,15 @@ package_postgresql() {
     rmdir ${pkgdir}/usr/share/doc/postgresql/html
 
 
-    sed -e "s/%PGMAJORVERSION%/${pkgver%.*}/g" \
-        -e "s/%PREVMAJORVERSION%/$((${pkgver%.*} - 1))/g" \
-        ${srcdir}/postgresql-check-db-dir.in |
-        install -Dm 755 /dev/stdin ${pkgdir}/usr/bin/postgresql-check-db-dir
+    install -Dm 755 ${srcdir}/postgresql-check-db-dir.in ${pkgdir}/usr/bin/postgresql-check-db-dir
 
     install -Dm 644 ${srcdir}/${pkgname}.pam ${pkgdir}/etc/pam.d/${pkgname}
     install -Dm 644 ${srcdir}/${pkgname}.logrotate ${pkgdir}/etc/logrotate.d/${pkgname}
 
     install -Dm 644 ${srcdir}/${pkgname}.service -t ${pkgdir}/usr/lib/systemd/system
-    install -Dm 644 ${srcdir}/${pkgname}.sysusers ${pkgdir}/usr/lib/sysusers.d/${pkgname}.conf
-    install -Dm 644 ${srcdir}/${pkgname}.tmpfiles ${pkgdir}/usr/lib/tmpfiles.d/${pkgname}.conf
+
+    install -d -o 41 -g 41 -m 700 ${pkgdir}/var/lib/postgres
+    install -d -o 41 -g 41 -m 700 ${pkgdir}/var/lib/postgres/data
 }
 
 package_postgresql-libs() {
